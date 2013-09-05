@@ -96,7 +96,7 @@ struct transition_s {
  * 
  * @return 
  */
-int run_fsm(transition action_table[], char **data, void **context, dup_fn dup_context, free_fn free_context);
+int run_fsm(transition action_table[], char **data, void *context, dup_fn dup_context, free_fn free_context);
 
 #endif /* FSM_H */
 

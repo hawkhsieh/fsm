@@ -141,6 +141,7 @@ void make_negative(char **data, int data_len, void *global_context, void *local_
 void read_digit(char **data, int data_len, void *global_context, void *local_context)
 {
   struct bencode_context *bc = (struct bencode_context*)global_context;
+  printf("context.int_is_neg=%d,context.int_value=%d\n" , bc->int_is_neg , bc->int_value );
   bc->int_value *= 10;
   bc->int_value += **data - '0';
 }
@@ -247,7 +248,7 @@ int main(int argc, char **argv)
     return 1;
   }
   printf("Please enter a string containing whitespace:\n");
-  fread(str, 1, MAX_INPUT, stdin);
+  fscanf(stdin,"%s",str);
 
   printf("Processing %d byte string...\n", (int)strlen(str));
   /* process string through FSM */
