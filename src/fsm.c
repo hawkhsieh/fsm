@@ -144,9 +144,10 @@ static int run_transition(transition *trans, char **data, void *context, dup_fn 
 	context_copy = NULL;
       }
     }
-
+    FSM fsm;
+    bzero( &fsm , sizeof(FSM));
     /* run the sub FSM on the copy of the context */
-    ret = run_fsm(trans->transition_table, data, context_copy, dup_context, free_context);
+    ret = run_fsm( &fsm,trans->transition_table, data, context_copy, dup_context, free_context);
 
     if(ret >= 0) {
       /* successful sub FSM  - keep the new context and free the old one */
@@ -239,14 +240,9 @@ static int run_transition(transition *trans, char **data, void *context, dup_fn 
   return -1;
 }
 
-int run_fsm(transition action_table[], char **data, void *context, dup_fn dup_context, free_fn free_context)
+int continue_fsm( FSM *fsm , transition action_table[], char **data, void *context, dup_fn dup_context, free_fn free_context )
 {
-  int current_state = 0;
-  int nbytes_processed = 0;
-  int in_accept = 0;
-  
-  /* all possible states are numbered positively */
-  while(current_state >= 0) {
+
     transition *current_trans;
     int nbytes_used_transing;
     int successful_trans = 0;
@@ -262,7 +258,7 @@ int run_fsm(transition action_table[], char **data, void *context, dup_fn dup_co
 
       /* check to see if the current state is right, and the
 	 transition condition succeeds */
-      if(current_state == current_trans->current_state) {
+      if(fsm->current_state == current_trans->current_state) {
 	/* we need a copy of the data pointer because, if a failing
 	   transition happens where some of the data is processed in
 	   another FSM, we can not have that sub-FSM moving our data
@@ -282,17 +278,17 @@ int run_fsm(transition action_table[], char **data, void *context, dup_fn dup_co
 	  }
 
 	  /* move forward the number of bytes used transitioning */
-	  nbytes_processed += nbytes_used_transing;
+      fsm->nbytes_processed += nbytes_used_transing;
 	  *data += nbytes_used_transing;
 	  
 	  /* change the state to the success state */
-	  current_state = current_trans->state_pass;
+      fsm->current_state = current_trans->state_pass;
 	  
 	  /* if the target of this transition was an accept state,
 	     mark that, otherwise, clear the in_accept variable */
-	  in_accept = 0;
+      fsm->in_accept = 0;
 	  if(current_trans->type == ACCEPT) {
-	    in_accept = 1;
+        fsm->in_accept = 1;
 	  } else if (current_trans->type == REJECT) {
 	    /* if we are in a reject state, then we immediately abort */
 	    return -1;
@@ -306,14 +302,14 @@ int run_fsm(transition action_table[], char **data, void *context, dup_fn dup_co
 	  /* finally, mark this as a successful transition, and break
 	     from the transition-hunting for loop */
 	  successful_trans = 1;
-	  break;
+      break;
 	} else {
 	  /* the transition failed. check to see if the state_fail is
 	     positive indicating that there is a state to move to if
 	     this transition fails. if the state_fail is negative, it
 	     just gets ignored */
 	  if(current_trans->state_fail >= 0) {
-	    current_state = current_trans->state_fail;
+        fsm->current_state = current_trans->state_fail;
 	  }
 	}
       }
@@ -322,13 +318,21 @@ int run_fsm(transition action_table[], char **data, void *context, dup_fn dup_co
     /* if we are done with the for loop, and there was NOT a
        successful transition, then move to the error state, -1 */
     if(successful_trans == 0) {
-      current_state = -1;
+      fsm->current_state = -1;
     }
 
- 
+    return 0;
+}
+
+int run_fsm( FSM *fsm , transition action_table[], char **data, void *context, dup_fn dup_context, free_fn free_context)
+{
+  /* all possible states are numbered positively */
+  while(fsm->current_state >= 0) {
+      if ( continue_fsm( fsm,action_table, data, context, dup_context, free_context ) )
+          break;
   }
 
   /* return 0 or more if we landed in an ACCEPT state, and -1 if we
      were unable to use the FSM to parse the input */
-  return (in_accept == 1) ? nbytes_processed : -1;
+  return (fsm->in_accept == 1) ? fsm->nbytes_processed : -1;
 }

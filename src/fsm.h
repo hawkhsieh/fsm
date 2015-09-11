@@ -83,6 +83,13 @@ struct transition_s {
 
 };
 
+
+typedef struct {
+    int current_state;
+    int nbytes_processed;
+    int in_accept;
+}FSM;
+
 /** 
  * Run a finite state machine on some data
  * 
@@ -96,7 +103,10 @@ struct transition_s {
  * 
  * @return 
  */
-int run_fsm(transition action_table[], char **data, void *context, dup_fn dup_context, free_fn free_context);
+int run_fsm(FSM *fsm, transition action_table[], char **data, void *context, dup_fn dup_context, free_fn free_context);
+int continue_fsm( FSM *fsm , transition action_table[], char **data, void *context, dup_fn dup_context, free_fn free_context );
+
+
 
 #endif /* FSM_H */
 
