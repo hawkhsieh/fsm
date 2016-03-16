@@ -265,7 +265,6 @@ int continue_fsm( FSM *fsm , transition action_table[], char **data, void *conte
 	   pointer, so we give it a copy, and only let ourselves move it
 	   based on the returned amount of processed bytes */
 	char *data_copy = *data;
-	
 
 	/* if we are in a transition moving from our current state.. */
 	if((nbytes_used_transing = run_transition(current_trans, &data_copy, context, dup_context, free_context)) >= 0) {
@@ -310,6 +309,7 @@ int continue_fsm( FSM *fsm , transition action_table[], char **data, void *conte
 	     just gets ignored */
 	  if(current_trans->state_fail >= 0) {
         fsm->current_state = current_trans->state_fail;
+        successful_trans = 2;
 	  }
 	}
       }
